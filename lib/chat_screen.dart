@@ -16,6 +16,9 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
 
   void _sendMessage({String? text, XFile? imgXFile}) async{
+
+    Map<String, dynamic> data = {};
+
     await Firebase.initializeApp();
 
     if(imgXFile != null){
@@ -34,13 +37,13 @@ class _ChatScreenState extends State<ChatScreen> {
       String url = await FirebaseStorage.instance
           .ref("uploads/$_timestamp.png")
             .getDownloadURL();
-
+      data["imgUrl"] = url;
       print(url);
     }
 
-    FirebaseFirestore.instance.collection('messages').doc().set({
-      'text':text
-    });
+    if(text!=null) {data['text'] = text;}
+
+    FirebaseFirestore.instance.collection('messages').doc().set(data);
   }
 
   @override
