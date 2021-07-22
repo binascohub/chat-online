@@ -1,8 +1,10 @@
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_online/text_composer.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
-
+import 'package:image_picker/image_picker.dart';
 
 class ChatScreen extends StatefulWidget {
   const ChatScreen({Key? key}) : super(key: key);
@@ -13,8 +15,29 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
 
-  void _sendMessage(String text) async{
+  void _sendMessage({String? text, XFile? imgXFile}) async{
     await Firebase.initializeApp();
+
+    if(imgXFile != null){
+      File imgFile = File(imgXFile.path);
+      String _timestamp = DateTime.now().millisecondsSinceEpoch.toString();
+      try {
+        await FirebaseStorage.instance
+            .ref("uploads/$_timestamp.png")
+            .putFile(imgFile);
+
+      } on FirebaseException catch (e) {
+        // e.g, e.code == 'canceled'
+        return;
+      }
+
+      String url = await FirebaseStorage.instance
+          .ref("uploads/$_timestamp.png")
+            .getDownloadURL();
+
+      print(url);
+    }
+
     FirebaseFirestore.instance.collection('messages').doc().set({
       'text':text
     });
