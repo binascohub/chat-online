@@ -15,20 +15,23 @@ class ChatScreen extends StatefulWidget {
 
 class _ChatScreenState extends State<ChatScreen> {
 
-  void _sendMessage({String? text, XFile? imgXFile}) async{
+  final db = FirebaseFirestore.instance;
 
+  Invocation? get invocation => null;
+
+
+  void _sendMessage({String? text, XFile? imgXFile}) async {
     Map<String, dynamic> data = {};
 
     await Firebase.initializeApp();
 
-    if(imgXFile != null){
+    if (imgXFile != null) {
       File imgFile = File(imgXFile.path);
       String _timestamp = DateTime.now().millisecondsSinceEpoch.toString();
       try {
         await FirebaseStorage.instance
             .ref("uploads/$_timestamp.png")
             .putFile(imgFile);
-
       } on FirebaseException catch (e) {
         // e.g, e.code == 'canceled'
         return;
@@ -36,24 +39,55 @@ class _ChatScreenState extends State<ChatScreen> {
 
       String url = await FirebaseStorage.instance
           .ref("uploads/$_timestamp.png")
-            .getDownloadURL();
-      data["imgUrl"] = url;
+          .getDownloadURL();
+      data['imgUrl'] = url;
       print(url);
     }
 
-    if(text!=null) {data['text'] = text;}
+    if (text != null) {
+      data['text'] = text;
+    }
 
-    FirebaseFirestore.instance.collection('messages').doc().set(data);
+    db.collection('messages').doc().set(data);
   }
+
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Ola"),
-        elevation: 0,
-      ),
-      body: TextComposer(_sendMessage),
-    );
+        appBar: AppBar(
+          title: Text("Ola"),
+          elevation: 0,
+        ),
+        body: Column(
+          children: [
+            Expanded(
+                child: StreamBuilder<QuerySnapshot>(
+                  stream: db.collection('messages').snapshots(),
+                  builder: (BuildContext context, AsyncSnapshot<QuerySnapshot> snapshot) {
+                    if (!snapshot.hasData) {
+                      return Center(
+                        child: CircularProgressIndicator(),
+                      );
+                    }
+
+                   List<DocumentSnapshot> documents = snapshot.data!.docs;
+
+                    return ListView.builder(
+                      itemCount: documents.length,
+                      reverse: true,
+                      itemBuilder: (context, index){
+                        return ListTile(
+                          title: Text('text'),
+                        );
+                      },
+                    );
+                },
+              )
+            ),
+            TextComposer(_sendMessage),
+          ],
+        ));
   }
 }
